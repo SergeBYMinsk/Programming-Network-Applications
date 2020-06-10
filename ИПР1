@@ -48,7 +48,7 @@ public class Solution {
                 output2.format("%n");
             }
             fWriter2.flush();//"очищаем" буфер
-            fWriter2.close();//хакрываем поток вывода
+            fWriter2.close();//закрываем поток вывода
 
 
             BufferedWriter fWriter3 = new BufferedWriter(new FileWrit-er("file3.txt"));
