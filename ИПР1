@@ -1,0 +1,91 @@
+import java.io.*;//импорт пакета, содержащего классы для ввода/вывода
+import java.util.*;//импорт пакета, содержащего вспомогательные классы
+import java.util.Formatter;//импорт пакета для форматированного ввода/вывода
+
+
+public class Solution {
+
+    public static void main(String[] args)throws IOException {
+        //int[] ourMassive = new int[12];
+
+        //for (int i = 0; i < ourMassive.length; i++)
+          //  ourMassive[i] = i+1;
+        try {
+
+            /*BufferedWriter fWriter1 = new BufferedWriter(new FileWrit-er("file1.txt"));
+            for (int i = 0; i < ourMassive.length; i++) {
+                String s1 = Integer.toString(ourMassive[i]);
+                fWriter1.write(s1);
+                fWriter1.write(" ");
+            }
+            fWriter1.flush();
+            fWriter1.close();*/
+
+            BufferedReader fReader1 = new BufferedReader(new FileRead-er("file1.txt"));));//создание буферизированного
+            // символьного потока ввода
+            Scanner scanner = new Scanner(fReader1);
+            int[] fMassive = new int[12];
+            for (int i = 0; i < 12; i++)
+                if (scanner.hasNextInt())
+
+                    fMassive[i] = scanner.nextInt();
+            fReader1.close();//хакрываем поток ввода
+
+
+            BufferedWriter fWriter2 = new BufferedWriter(new FileWrit-er("file2.txt"));//создание буферизированного
+            // символьного потока вывода
+            Formatter output2 = new Formatter(fWriter2);
+            output2.format("%4s", " ");
+            for (int i = 0; i < fMassive.length; i++) {
+                output2.format("%4d", fMassive[i]);
+            }
+            output2.format("%n");
+            for (int i = 0; i < fMassive.length; i++) {
+                output2.format("%4d", fMassive[i]);
+                for (int j = 0; j < fMassive.length; j++) {
+                    output2.format("%4d", fMassive[i] * fMassive[j]);
+                }
+                output2.format("%n");
+            }
+            fWriter2.flush();//"очищаем" буфер
+            fWriter2.close();//хакрываем поток вывода
+
+
+            BufferedWriter fWriter3 = new BufferedWriter(new FileWrit-er("file3.txt"));
+            Formatter output3 = new Formatter(fWriter3);
+            for (int i = 0; i < fMassive.length; i++) {
+                output3.format("%4d", fMassive[i]);
+            }
+            output3.format("%n%n");
+            output3.format("%4s", " ");
+            for (int i = 0; i < fMassive.length; i++) {
+                output3.format("%4d", fMassive[i]);
+            }
+            output3.format("%n");
+            for (int i = 0; i < fMassive.length; i++) {
+                output3.format("%4d", fMassive[i]);
+                for (int j = 0; j < fMassive.length; j++) {
+                    output3.format("%4d", fMassive[i] * fMassive[j]);
+                }
+                output3.format("%n");
+            }
+            fWriter3.flush();
+            fWriter3.close();
+
+        }   catch(FileNotFoundException e){
+
+            System.out.println("File not found");
+
+        }
+        catch(IOException e){
+
+            System.out.println("Error1");
+
+        }
+        catch(Exception e){
+
+            System.out.println("Error2");
+
+        }
+    }
+}
