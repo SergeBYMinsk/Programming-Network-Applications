@@ -1,0 +1,131 @@
+//server
+import java.io.*;//импорт пакета, содержащего классы для ввода/вывода
+import java.net.*;//импорт пакета, содержащего классы для работы в сети Internet
+import java.util.Arrays;//импорт пакета, содержащего классы для работы с масси-вами
+
+
+
+public class Server {
+    public static void main(String[] arg)
+    {
+        ServerSocket serverSocket = null;//объявление класса, используемого сер-вером
+        Socket clientAccepted     = null;//объявление класса, используемого кли-ентом
+        ObjectInputStream  sois   = null;//объявление байтового потока ввода
+        ObjectOutputStream soos   = null;//объявление байтового потока вывода
+
+        double [] mass;
+
+        try {
+            System.out.println("server starting....");
+            serverSocket = new ServerSocket(2525);//создание сокета сервера для заданного порта
+            clientAccepted = serverSocket.accept();//выполнение метода, который обеспечивает реальное подключение сервера к клиенту
+            System.out.println("connection established....");
+            sois = new ObjectInputStream(clientAccepted.getInputStream());
+            soos = new ObjectOutputStream(clientAccepted.getOutputStream());
+
+            mass = (double[])sois.readObject();
+
+            for (int i = 0; i<mass.length;i++){
+                System.out.print(mass[i]+"\t");
+                System.out.println();
+            }
+
+            Tax tax= new Tax();
+
+            String tx = Arrays.toString(tax.Taxies(mass, mass.length));
+            System.out.print("Result: " + tax.Taxies(mass, mass.length));
+            System.out.println(tx);
+
+
+            soos.writeObject(tx);//потоку вывода присваивается значение строко-вой переменной (передается клиенту)
+
+
+        }catch(Exception e)    {
+        } finally {
+            try {
+                sois.close();//закрытие потока ввода
+                soos.close();//закрытие потока вывода
+                clientAccepted.close();//закрытие сокета, выделенного для клиен-та
+                serverSocket.close();//закрытие сокета сервера
+            } catch(Exception e) {
+                e.printStackTrace();//вызывается метод исключения е
+            }
+        }
+    }
+
+}
+
+//client
+import java.io.*;//импорт пакета, содержащего классы для ввода/вывода
+import java.net.*;//импорт пакета, содержащего классы для работы в сети
+import java.util.Scanner;//импорт пакета, позводяюхщего выделять примитивы и строки из входного потока
+
+
+public class Client {
+    public static void main(String[] arg) {
+        PrintWriter log;
+        FileWriter fw;
+        try {
+            fw = new FileWriter("exceptions.log", true);
+            log = new PrintWriter((java.io.Writer) fw);
+        }
+        catch (IOException ex){
+            ex.printStackTrace();
+            return;
+        }
+        try {
+            Scanner in = new Scanner(System.in);
+
+            System.out.println("server connecting....");
+            Socket clientSocket = new Socket("127.0.0.1",2525);//установление соединения между локальной машиной и указанным портом узла сети
+            System.out.println("connection established....");
+            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));//создание буферизированного символьного потока ввода
+            ObjectOutputStream coos = new ObjectOutputStream(clientSocket.getOutputStream());//создание потока вывода
+            ObjectInputStream  cois = new ObjectInputStream(clientSocket.getInputStream());//создание потока ввода
+
+            System.out.println("Do you want to start? (1 - YES / 0 - NO)");
+            int iAcception = stdin.read();
+
+            if(iAcception != 0) {
+                System.out.print("Enter the number of salaries: ");
+                int iArrowsAmount = in.nextInt();
+
+                double[] mass = new double [iArrowsAmount];
+                for (int i = 0; i<iArrowsAmount;i++){
+                    System.out.print("Salary ["+i+"]\\: ");
+                    mass[i] = in.nextDouble();
+                }
+
+                coos.writeObject(mass);//потоку вывода присваивается значение строковой переменной (передается серверу)
+                String ans =  (String) cois.readObject();
+                System.out.println("~server~: "+ans);//выводится на экран содер-жимое потока ввода (переданное сервером)
+                System.out.println("---------------------------");
+            }
+            coos.close();//закрытие потока вывода
+            cois.close();//закрытие потока ввода
+            clientSocket.close();//закрытие сокета
+        }catch(Exception e)    {
+            e.printStackTrace();//выполнение метода исключения е
+        }
+    }
+}
+//function
+public class Tax {
+
+    public double[] Taxies(double A[], int N) {
+
+        double tx[] = new double[N];
+        for(int i=0; i < N;i++)
+        {
+            if(A[i]<100000)
+                A[i]*= 0.05;
+            if(A[i]>=100000 & A[i]<500000)
+                A[i]*= 0.1;
+            if(A[i]>=500000)
+                A[i]*= 0.15;
+            tx[i]=A[i];
+        }
+
+        return tx;
+    }
+}
