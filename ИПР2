@@ -1,0 +1,443 @@
+
+package sport;
+
+import java.applet.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.*;
+
+public class AppletHS extends Applet implements Runnable {
+
+    Button jB = new Button("Run"); 
+    
+    private int w, h;
+    private BufferedImage bi;
+    private Graphics2D big;
+    private boolean stop = false;
+    private Thread timer = null;
+    private long curTime, lastTime;
+    Human hh;
+    
+    /** Этот метод будет вызван после загрузки апплета */
+    public void init() {
+        try {
+            //Кнопка 
+            add(jB);
+            //Создаём анонимный внутренний класс для ActionListener
+            jB.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    hh.begin();
+                }
+            });
+            
+            //Создаем объекты и устанавливаем начальные значения.
+            setSize(800,400);
+            Dimension dim = getSize();
+            w = dim.width;
+            h = dim.height;
+            hh= new Human();
+            
+            //Создаем изображение и получаем его объект Graphics2D.
+            //Рисовать будем только на нем, а экран выводим уже
+            //готовый рисунок (т.н. двойная буферезация).
+            bi = (BufferedImage)createImage(w, h);
+            big = bi.createGraphics();
+            big.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                        RenderingHints.VALUE_ANTIALIAS_ON);
+
+            //Создаем поток, который будет периодически вызывать метод update.
+            timer = new Thread(this);
+            timer.start();
+        }
+        catch(Exception error) {
+            System.out.println(error.getMessage());
+        }
+    }
+    
+    /** Этот метод выполняет перерисовку окна апплета */
+    public void update(Graphics g) {
+        if (stop) return;
+        try {
+            //Получаем указатель на объект Graphics2D
+            Graphics2D g2 = (Graphics2D)g;
+            
+            grawHuman();
+            
+            //Рисуем готовое изображение на экране
+            g2.drawImage(bi, 0, 0, this);
+            
+            //big.setTransform(new AffineTransform());
+        }
+        catch(Exception error) {
+            System.out.println(error.getMessage());
+        }
+    }
+
+    private void grawHuman() {
+        //Узнаем текущее время 
+        curTime = System.currentTimeMillis();
+        
+        long dt = curTime - lastTime;
+        lastTime = curTime;
+        
+        hh.onUpdate((int)dt);
+        //Очищаем рисунок
+        big.setBackground(Color.WHITE);
+        big.clearRect(0, 0, w, h);
+        
+        //Рисуем 
+        hh.paint(big);
+        
+    }
+    
+    //Этот метод выполняется в отдельном потоке (timer).
+    //Он вызывает перерисовку окна апплета каждую секунду.
+    public void run() {
+        while(!stop) {
+            try {
+                repaint();
+                Thread.currentThread().sleep(10);
+            }
+            catch(Exception err) {}
+        }
+    }
+    
+    //Этот метод выполняется если пользователь покинул страницу
+    //с апплетом. Он останавливает поток (timer) и, соответственно,
+    //перерисовку окна апплета.
+    public void stop() {
+        super.stop();
+        stop = true;
+    }
+    
+    //Этот метод выполняется когда пользователь попадает на страницу
+    //с апплетом. Он запускает парралельный поток (timer).
+    public void start() {
+        super.start();
+        stop = false;
+        if(timer == null) {
+            timer = new Thread(this);
+            timer.start();
+        }
+        curTime = lastTime = System.currentTimeMillis();
+    }
+    
+    //Этот метод выполняется при закрытии страницы с апплетом.
+    public void destroy() {
+        super.destroy();
+        stop = true;
+        //Ждем пока парралельный поток (timer) завершит работу.
+        Thread.currentThread().yield();
+    }
+
+    
+    public String getAppletInfo() {
+        String retValue;
+        
+        retValue = "Sportsmen)";
+        return retValue;
+    }
+    
+}
+
+Прорисовка и перемещение человека
+
+package sport;
+
+import java.awt.*;
+
+public class Human {
+
+    private Limb hand11, hand12, hand21, hand22;
+    private Limb leg11, leg22, leg12, leg21;
+    private Limb trunc;
+    private int r_head = 25;
+    private double x, y;
+    double t = 0;
+    private double l1 = 0, l11 = 0, l2 = 0, l22;
+    private boolean ln = false;
+    private double h1 = 0, h11 = 0, h2 = 0, h22;
+    private long last_t;
+    private boolean 
+            notEnd = true,
+            onAnimation = false;
+
+    public Human() {
+        hand11 = new Limb(50, 10, 40);
+        hand12 = new Limb(hand11.getEPoint(), 40);
+        hand21 = new Limb(60, 10, 40);
+        hand22 = new Limb(hand21.getEPoint(), 40);
+        leg11 = new Limb(50, 50, 50);
+        leg12 = new Limb(leg11.getEPoint(), 50);
+        leg21 = new Limb(60, 50, 50);
+        leg22 = new Limb(leg21.getEPoint(), 50);
+        trunc = new Limb(50, 10, 50);
+        //  gApplet = grph;
+        setPosition(100, 200);
+//                    super();
+        //  new Thread(this).start();
+
+    }
+
+    public void humanLinks() {
+        leg11.setRotation(l1);
+        leg12.setRotation(l11);
+        leg21.setRotation(l2);
+        leg22.setRotation(l22);
+        leg12.setPosition(leg11.getEPoint());
+        leg22.setPosition(leg21.getEPoint());
+
+        hand11.setRotation(h1);
+        hand12.setRotation(h11);
+        hand21.setRotation(h2);
+        hand22.setRotation(h22);
+        hand12.setPosition(hand11.getEPoint());
+        hand22.setPosition(hand21.getEPoint());
+
+    }
+
+    public void paint2(Graphics2D g2d) {
+        g2d.drawLine(0, 0, 100, 100);
+    }
+
+    public void paint(Graphics2D g2d) {
+        g2d.setStroke(new BasicStroke(3.0f));  // толщина линии
+        g2d.setColor(Color.BLACK);
+        g2d.drawLine((int) trunc.getBPoint().x, (int) trunc.getBPoint().y,
+                (int) trunc.getBPoint().x, (int) (trunc.getBPoint().y - r_head * 0.3));
+        g2d.drawOval((int) trunc.getBPoint().x - r_head / 2, (int) (trunc.getBPoint().y - r_head * 1.3), r_head, r_head);
+        hand11.paint(g2d);
+        hand12.paint(g2d);
+        hand21.paint(g2d);
+        hand22.paint(g2d);
+        leg11.paint(g2d);
+        leg12.paint(g2d);
+        leg21.paint(g2d);
+        leg22.paint(g2d);
+        trunc.paint(g2d);
+    }
+
+    public void onUpdate(int dt) {
+        if (dt > 100) dt = 100;
+        if (onAnimation) {
+            t += dt;
+            if (t < 1000) {
+                humanRun(dt);
+            } else if (t < 2000) {
+                humanJump1(dt);
+            } else if (t < 3000) {
+                humanJump2(dt);
+            } else if (t < 4000) {
+                humanJump3(dt);
+            } else if (t < 5000) {
+                humanVivat(dt);
+            } else if (t > 7000) {
+                notEnd = false;
+                onAnimation = false;
+                humanStart(dt);
+            }
+        } else {
+              humanStart(dt);
+        }
+        humanLinks();
+    }
+
+
+public void humanStart(int dt) {
+        l1 = 30;
+        l11 = 0;
+        l2 = -30;
+        l22 = -30;
+        h1 = -20;
+        h11 = 40;
+        h2 = 20;
+        h22 = 80;
+        setPosition(100, 200);
+    }
+
+    public void humanRun(int dt) {
+        double dm = dt / 7.;
+        this.setPosition(x + dm, y);
+        // перемешение ног
+        if (ln) {
+            l1 += dm;
+            l11 = -60 + l1;
+            if (l1 > 60.) {
+                ln = false;
+            }
+
+            l2 -= dm;
+            if (l2 < 0) {
+                l22 = l2 * 2;
+            }
+        } else {
+            l1 -= dm;
+            if (l1 < 0) {
+                l11 = l1 * 2;
+            }
+            if (l1 < -60.) {
+                ln = true;
+            }
+
+            l2 += dm;
+            l22 = -60 + l2;
+        }
+        //---------------
+        //перемешение рук
+        if (ln) {
+            h1 += dm;
+            h2 -= dm;
+        } else {
+            h1 -= dm;
+            h2 += dm;
+        }
+        h11 = 90 + h1;
+        h22 = 90 + h2;
+        //---------------
+
+    }
+
+    public void humanJump1(int dt) {
+        double dm = dt / 7.;
+
+        this.setPosition(x + dm, y - dm);
+        // перемешение ног
+        if (l1 < 80.) {
+            l1 += dm;
+            l11 = -60 + l1;
+        }
+        if (l2 < 80.) {
+            l2 += dm;
+            l22 = -60 + l2;
+        }
+        //---------------
+        //перемешение рук
+        if (h1 < 80.) {
+            h1 += dm;
+            h2 += dm;
+        }
+        h11 = 90 + h1;
+        h22 = 90 + h2;
+        //---------------
+    }
+
+    public void humanJump2(int dt) {
+        double dm = dt / 7.;
+
+        this.setPosition(x + dm, y + dm);
+        // перемешение ног
+        if (l1 < 80.) {
+            l1 += dm;
+            l11 = -60 + l1;
+        }
+        if (l2 < 80.) {
+            l2 += dm;
+            l22 = -60 + l2;
+        }
+        //---------------
+        //перемешение рук
+        if (h1 < 80.) {
+            h1 += dm;
+        }
+        if (h2 < 80.) {
+            h2 += dm;
+        }
+        if (h11 > h1) {
+            h11 -= dm;
+        }
+        if (h22 > h2) {
+            h22 -= dm;
+        }
+        //---------------
+    }
+
+    public void humanJump3(int dt) {
+        double dm = dt / 7.;
+        dm *= 2;
+        if(l1>0.)this.setPosition(x+dm/4,y);
+        // перемешение ног
+        if (l1 > 0.) {
+            l1 -= dm;
+        }
+        if (l11 > 0.) {
+            l11 -= dm;
+        }
+        if (l2 > 0.) {
+            l2 -= dm;
+        }
+        if (l22 > 0.) {
+            l22 -= dm;
+        }
+        //---------------
+        //перемешение рук
+        if (h1 > 0.) {
+            h1 -= dm;
+        }
+        if (h2 > 0.) {
+            h2 -= dm;
+        }
+        if (h11 > 0.) {
+            h11 -= dm;
+        }
+        if (h22 > 0.) {
+            h22 -= dm;
+        }
+        //---------------
+    }
+
+    public void humanVivat(int dt) {
+        double dm = dt / 7.;
+        dm *= 2;
+        //  this.setPosition(x+dm,y+dm);
+        // перемешение ног
+        if (l1 > -15.) {
+            l1 -= dm;
+        }
+        if (l11 > -15.) {
+            l11 -= dm;
+        }
+        if (l2 < 15.) {
+            l2 += dm;
+        }
+        if (l22 < 15.) {
+            l22 += dm;
+        }
+        //---------------
+        //перемешение рук
+        if (h1 < 135.) {
+            h1 += dm;
+        }
+        if (h2 > -135.) {
+            h2 -= dm;
+        }
+        if (h11 < 135.) {
+            h11 += dm;
+        }
+        if (h22 > -135.) {
+            h22 -= dm;
+        }
+        //---------------
+    }
+
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+        trunc.setPosition(x, y);
+        leg11.setPosition(trunc.getEPoint());
+        leg21.setPosition(trunc.getEPoint());
+        hand11.setPosition(trunc.getBPoint());
+        hand21.setPosition(trunc.getBPoint());
+    }
+
+    public void begin(){
+        t=0;
+        onAnimation = true;
+        setPosition(100, 200);
+        ln = false;
+        humanStart(0);
+        l1 = 0; l11 = 0; l2 = 0; l22=0;
+        ln = false;
+        h1 = 0; h11 = 0; h2 = 0; h22=0;
+    }
+}
