@@ -1,0 +1,770 @@
+Communication.java
+
+public class Communication {
+    
+    public ObjectInputStream sois;
+    public ObjectOutputStream soos;
+    public int numOfClient;
+    public static int maxClients;
+    private ResultSet rs;
+    private ResultSet rs_table;
+    
+    private String query;
+    private DbConnection mdbc;
+    private Statement stmt;
+    public Map<String, String> stringmap;
+    public Map<String, String> stringmapForTime_Table;
+    public boolean logging;
+    private static User user;
+    private ArrayList<String[]> ResultSets;
+    private ArrayList<String[]> All;
+    
+
+    
+    
+    public String quotate(String content)
+    {
+        return " '" + content + "' ";
+    }
+    
+    public void serverMessage(String msg) {
+        if (logging) {
+            System.out.println("Worker for client" + numOfClient + ": " + msg);
+        }
+    }
+         
+    public void sendMessage(String msg) {
+        try {
+            soos.writeObject(msg);
+
+            if (logging) {
+                serverMessage("message sended: " + msg);
+            }
+        } catch (IOException e) {
+            System.out.println("sendMessage = " + e);
+        }
+    }
+    
+    public String receiveMessage() {
+        String msg = new String();
+        try {
+            msg = (String) sois.readObject();
+            if (logging) {
+                serverMessage("~client~: " + msg);
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("receiveMessage = " + e);
+            return "_exception";
+        }
+
+        return msg;
+    }
+    public void sendObject(Object obj) {
+        try {
+            //soos.flush();
+            soos.writeObject(obj);
+
+            if (logging) {
+                System.out.println("object sended!");
+            }
+        } catch (IOException e) {
+            System.out.println("sendObject = " + e);
+        }
+    }
+        
+    public void sendResultSet(ArrayList<String[]> resultSets) {
+        try {
+            soos.writeObject(resultSets);
+
+            if (logging) {
+
+ 
+    serverMessage("resultSets sended ");
+            }
+        } catch (IOException e) {
+            System.out.println("sendMessage = " + e);
+        }
+    }
+
+    public LinkedHashMap receiveStringMap() {
+        LinkedHashMap strmap = new LinkedHashMap();
+        try {
+            strmap = (LinkedHashMap) sois.readObject();
+
+            if (logging) {
+                serverMessage("stringmap received");
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println("receiveStringMap = " + e);
+        }
+
+        return strmap;
+    }
+
+   
+    public Communication(ObjectInputStream is,ObjectOutputStream os, int clients)
+    {
+        sois = is;
+        soos = os;
+        numOfClient = clients;
+    }
+    public void go()
+    {
+        boolean exit = false;
+        try
+        { 
+            logging = true; 
+            user = new User();
+            String msg = receiveMessage();
+            
+
+            if(msg.equals("go")){
+            
+  
+                mdbc = new DbConnection();
+                mdbc.init();
+                stmt = mdbc.getMyConnection().createStatement();
+                sendMessage("start");
+                do{
+                    if(exit==true)
+                    {
+                        break;
+                    }
+                    stringmap = receiveStringMap();//pas login
+
+                    if(stringmap==null)
+                    {
+                        stringmap = receiveStringMap();
+                        if(stringmap!=null){
+                            rs = stmt.executeQuery("SELECT MAX(id) AS max_id FROM users");
+                            int id=1;
+                
+                            if (rs.next()) {
+                                id = rs.getInt("max_id");  
+                            }
+                            query = "INSERT INTO users ";
+                            query += "VALUES('"+(id+1)+"','";
+                            query +=stringmap.get("name")+"','"+stringmap.get("login")+"','"
+                                    +stringmap.get("password")+"','"+stringmap.get("rights")+"')";
+                        
+                            int done = stmt.executeUpdate(query);
+                            sendMessage("registrated");
+                            stringmap=null;
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        user.stringmapToUser(stringmap);
+                        query = ("SELECT * FROM users WHERE login='"+user.getUserLogin()+"'");
+                        rs = stmt.executeQuery(query);
+                         
+                        if(user.resultSetToUser(rs))
+                        {
+
+
+if(user.getUserRights().equals("admin"))
+                                {
+                                    sendMessage("admin");
+                                    do
+                                    {
+                                        msg = receiveMessage();
+                                        
+                                        if(msg.equals("creating"))
+                                        {
+                                            sendMessage("workingWindow");
+                                            WorkWindow(msg,query);
+                                        }
+                                        if(msg.equals("prosmotrWindow"))
+                                        {
+                                            sendMessage("openProsmotrWindow");
+                                            do
+                                            {
+                                                msg = receiveMessage();
+                                                if(msg.equals("usersData"))
+                                                {
+                                                    rs = stmt.executeQuery("SELECT * FROM users");
+                                                    ResultSets=new ArrayList<>(); 
+                                                    try
+                                                    {
+                                                        if(rs == null)
+                                                        {
+                                                            String[] row ={"null", "null","null", "null","null"};
+                                                            ResultSets.add(row);
+                                                        }
+                                                    else{
+                                                        while(rs.next())
+                                                        {
+                                                            String[] row ={rs.getString("id"), rs.getString("name"),rs.getString("login"), rs.getString("password")
+                                                                 , rs.getString("rights")};
+                                                            ResultSets.add(row);
+                                                        }
+                                                    }
+                                                    }
+                                                    catch(Exception e)              
+                                                    {
+
+     System.out.println("Exception in viborka");
+                                                    }
+                                                    sendObject(ResultSets);//отправка инфы бд
+                                                }
+                                                if(msg.equals("exidTableUsers"))
+                                                {
+                                                    sendMessage("exidTableUsers");
+                                                    break;
+                                                }
+                                            }while(true);
+                                        }
+                                        if(msg.equals("lessonsWindow"))
+                                        {
+                                            LessonsWindow(msg);
+                                        }
+                                        if(msg.equals("teachersWindow"))
+                                        {
+                                            TeachersWindow(msg);
+                                        }
+                                        if(msg.equals("exit_menu"))
+                                        {
+                                            sendMessage("exit_menu");
+                                            break;
+                                        }
+                                        if(msg.equals("exit"))
+                                        {
+                                            sendMessage("GoodBye");
+                                            exit = true;
+                                            break;
+                                        }
+                                                                                
+                                    }while(true);
+                                }
+                                else{
+                                    sendMessage("user");
+                                    do
+                                    {
+                                        
+                                        stringmap = receiveStringMap();
+                                       ResultSets=new ArrayList<>(); 
+                                       stringmapForTime_Table=stringmap;
+
+
+ if(stringmapForTime_Table!=null){
+                query = ("SELECT * FROM time_tabl WHERE class='"+stringmapForTime_Table.get("class")+stringmapForTime_Table.get("letter")+"'"+" AND day='"+stringmapForTime_Table.get("day")+"'");
+                rs = stmt.executeQuery(query);
+                while(rs.next()){
+                String[] row ={rs.getString("lesson_id"),rs.getString("time_start"), rs.getString("time_end")
+                                , rs.getString("class"), rs.getString("day"), rs.getString("id")};
+                ResultSets.add(row);
+                }
+            }   
+            String[] str = new String[ResultSets.size()];
+            String[] les = new String[ResultSets.size()];
+
+            for(int i=0;i<ResultSets.size();i++)
+            {
+                rs = stmt.executeQuery("SELECT * FROM lessons WHERE id='"+ResultSets.get(i)[0]+"'");
+                rs.next();
+                str[i] = rs.getString("id_teacher");
+                les[i] = rs.getString("lessons_name");
+            }
+            
+            All=new ArrayList<>(); 
+            for(int i=0;i<str.length;i++)
+            {
+                rs = stmt.executeQuery("SELECT * FROM teachers WHERE id="+str[i]);
+                rs.next();
+                
+                String[] row ={les[i],rs.getString("teacher_name")+" "+rs.getString("teacher_middlename")+" "
+                        +rs.getString("teacher_surname"), ResultSets.get(i)[1], ResultSets.get(i)[2]
+                                , ResultSets.get(i)[3], ResultSets.get(i)[4], ResultSets.get(i)[5]};
+                All.add(row);
+            }
+            sendObject(All);
+                                    }while(true);
+                                }
+                        } 
+                        else
+
+
+ {
+                            sendMessage("authorizationError");
+                        }  
+                    }
+              }while(true);
+            }
+          //  mdbc.close(stmt);
+                
+          
+            
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } catch (Exception e) {
+            serverMessage("init error: " + e);
+        } // вывод исключений
+        finally {
+            try {
+                sois.close();//закрытие потока ввода
+                soos.close();//закрытие потока вывода
+            } catch (Exception e) {
+                e.printStackTrace();//вызывается метод исключения е
+            }
+        }
+    }  
+    
+public void WorkWindow(String msg,String query) throws SQLException
+    {
+        do{         
+            msg = receiveMessage();
+            if(msg.equals("need_data"))
+            {                            
+                sendMessage("info");
+                stringmap = receiveStringMap();
+                query = ("SELECT * FROM time_tabl WHERE class='"+stringmap.get("class")+stringmap.get("letter")+"'"+" AND day='"+stringmap.get("day")+"'");
+                rs = stmt.executeQuery(query);
+                stringmapForTime_Table = stringmap;
+            }
+            if(msg.equals("add_button"))
+            {
+
+     
+sendMessage("addWindowOpen");
+                continue;
+            }
+            if(msg.equals("data"))
+            {
+                stringmap = receiveStringMap();
+                if(stringmap==null)
+                {
+                    continue;
+                }
+                rs = stmt.executeQuery("SELECT MAX(id) AS max_id FROM time_tabl");
+                int id=1;
+                
+                if (rs.next()) {
+                    id = rs.getInt("max_id");  
+                }
+                
+                query = ("SELECT * FROM time_tabl WHERE class='"+stringmap.get("class")+
+                        stringmap.get("letter")+"'"+" AND day='"+stringmap.get("day")+"'"
+                        +" AND time_start='"+stringmap.get("start")+"'");
+                
+                rs = stmt.executeQuery(query);
+                
+                if(!rs.next())
+                {
+                    query = ("INSERT INTO time_tabl VALUES('"+stringmap.get("lesson_id")+"','"
+                        +stringmap.get("start")+"','"+stringmap.get("end")+"','"
+                        +stringmap.get("class")+stringmap.get("letter")+"','"
+                        +stringmap.get("day")+"','"+(id+1)+"')");
+                                                
+                    int done = stmt.executeUpdate(query);
+                    sendMessage("added"); 
+                }
+                else sendMessage("add_error");
+            }
+            
+            
+            if(msg.equals("edit_button"))
+            {
+                sendMessage("edit");
+                continue;
+
+
+ }
+            if(msg.equals("AddWindowOpened"))
+            {
+                stringmap = receiveStringMap();
+                
+                query = ("SELECT * FROM time_tabl WHERE class='"+stringmap.get("class")+
+                    stringmap.get("letter")+"'"+" AND day='"+stringmap.get("day")+"'"
+                    +" AND time_start='"+stringmap.get("start")+"'");
+                
+                rs = stmt.executeQuery(query);
+                
+                if(!rs.next())
+                {
+                    query = ("UPDATE time_tabl SET lesson_id="+ quotate(stringmap.get("lesson_id")) + "WHERE id=" + stringmap.get("id"));
+                    int done = stmt.executeUpdate(query);
+                    query = "UPDATE time_tabl SET time_start="+ quotate(stringmap.get("start")) + "WHERE id=" + stringmap.get("id");
+                    done = stmt.executeUpdate(query);
+                    query = "UPDATE time_tabl SET time_end="+ quotate(stringmap.get("end")) + "WHERE id=" + stringmap.get("id");
+                    done = stmt.executeUpdate(query);
+                    query = "UPDATE time_tabl SET class="+ quotate(stringmap.get("class")+ stringmap.get("letter")) + " WHERE id=" + stringmap.get("id");
+                    done = stmt.executeUpdate(query);
+                    query = "UPDATE time_tabl SET day="+ quotate(stringmap.get("day")) + "WHERE id=" + stringmap.get("id");
+                    done = stmt.executeUpdate(query);
+                    sendMessage("updated");
+                }
+                else sendMessage("update_error");
+            }
+            if(msg.equals("delete"))
+            {
+                sendMessage("deleteData");
+                String id = receiveMessage();
+                query = ("DELETE FROM time_tabl WHERE id='"+id+"'");
+                int done = stmt.executeUpdate(query);
+                sendMessage("ok");
+                serverMessage("record has been deleted");   
+            }
+
+
+if(msg.equals("workingWindowExit"))
+            {
+                sendMessage("workingWindowExit");
+                break;
+            } 
+            if(msg.equals("getLessons"))
+            {
+                sendLessons();
+                continue;
+            }
+            if(msg.equals("getTeachers"))
+            {
+                sendTeachers();
+                continue;
+            }
+            if(msg==null)
+            {
+                continue;
+            }
+            
+            
+            ResultSets=new ArrayList<>(); 
+            if(stringmapForTime_Table!=null){
+                query = ("SELECT * FROM time_tabl WHERE class='"+stringmapForTime_Table.get("class")+stringmapForTime_Table.get("letter")+"'"+" AND day='"+stringmapForTime_Table.get("day")+"'");
+                rs = stmt.executeQuery(query);
+                while(rs.next()){
+                String[] row ={rs.getString("lesson_id"),rs.getString("time_start"), rs.getString("time_end")
+                                , rs.getString("class"), rs.getString("day"), rs.getString("id")};
+                ResultSets.add(row);
+                }
+            }   
+            String[] str = new String[ResultSets.size()];
+            String[] les = new String[ResultSets.size()];
+
+            for(int i=0;i<ResultSets.size();i++)
+            {
+                rs = stmt.executeQuery("SELECT * FROM lessons WHERE id='"+ResultSets.get(i)[0]+"'");
+
+  
+  	  rs.next();
+                str[i] = rs.getString("id_teacher");
+                les[i] = rs.getString("lessons_name");
+            }
+            
+            All=new ArrayList<>(); 
+            for(int i=0;i<str.length;i++)
+            {
+                rs = stmt.executeQuery("SELECT * FROM teachers WHERE id="+str[i]);
+                rs.next();
+                
+                String[] row ={les[i],rs.getString("teacher_name")+" "+rs.getString("teacher_middlename")+" "
+                        +rs.getString("teacher_surname"), ResultSets.get(i)[1], ResultSets.get(i)[2]
+                                , ResultSets.get(i)[3], ResultSets.get(i)[4], ResultSets.get(i)[5]};
+                All.add(row);
+            }
+            sendObject(All);//отправка инфы бд
+        }while(true);
+    }
+public void LessonsWindow(String msg) throws SQLException
+{
+    String query = new String();
+    sendMessage("openLessonsWindow");
+    do
+    {
+        msg = receiveMessage();
+        if(msg.equals("LessonsWindowOpen"))
+        {
+            sendMessage("Lessons");
+            ResultSet set = null;
+
+            query = ("SELECT * FROM lessons");                                        
+            set = stmt.executeQuery(query);
+  
+            ResultSets=new ArrayList<>(); 
+            ArrayList<String[]> ResultSets1 = null;
+            try
+            {
+                while(set.next())
+                {
+
+
+   String[] row ={set.getString("id"), set.getString("lessons_name"), set.getString("id_teacher")};
+                    ResultSets.add(row);
+               }
+            }
+            catch(Exception e)              
+            {
+                System.out.println("Exception in sample");
+            }
+            boolean flag = false;
+                            ResultSets1=new ArrayList<>();
+
+            for(int i=0;i<ResultSets.size();i++)
+            {
+                
+                if(ResultSets.get(i)[2]!=null)
+                {
+                    if(flag == false && i>0)
+                    {
+                        String[] row={ResultSets.get(i-1)[0],ResultSets.get(i-1)[1], "teacher not found"};
+                        ResultSets1.add(row);
+                    }
+                    query = ("SELECT * FROM teachers WHERE id='"+ResultSets.get(i)[2]+"'"); 
+                    set = stmt.executeQuery(query); 
+
+                    while(set.next())
+                    {
+                        flag = true;
+                        String[] row={ResultSets.get(i)[0],ResultSets.get(i)[1], set.getString("teacher_name") +" "+set.getString("teacher_middlename")+" "+set.getString("teacher_surname")};
+                        ResultSets1.add(row);
+                    }
+                }
+                else
+                {
+                    String[] row={ResultSets.get(i)[0],ResultSets.get(i)[1], "teacher not found"};
+                    ResultSets1.add(row);
+                }
+            } 
+
+
+ if(flag == false )
+            {
+                String[] row={ResultSets.get(ResultSets.size()-1)[0],ResultSets.get(ResultSets.size()-1)[1], "teacher not found"};
+                ResultSets1.add(row);
+            }
+            sendObject(ResultSets1);//отправка инфы бд
+            continue;
+        }
+        if(msg.equals("addLesson_button"))
+        {
+            sendMessage("addLesson_button");
+            continue;
+        }
+        if(msg.equals("teacher_list"))
+        {
+            query = ("SELECT * FROM teachers");
+            rs = stmt.executeQuery(query);
+            ResultSets=new ArrayList<>();
+            while(rs.next())
+            {
+                String[] row={rs.getString("id"),rs.getString("teacher_name"),rs.getString("teacher_middlename"),rs.getString("teacher_surname")};
+                ResultSets.add(row);
+            }
+            sendObject(ResultSets);//отправка инфы бд
+            continue;
+        }
+        if(msg.equals("button_ok"))
+        {
+            sendMessage("button_ok");
+            stringmap = receiveStringMap();
+            rs = stmt.executeQuery("SELECT MAX(id) AS max_id FROM lessons");
+            int id=0;
+            if (rs.next()) {
+                id = rs.getInt("max_id");  
+            }
+            query = ("INSERT INTO lessons VALUES("+(id+1)+",'"+stringmap.get("lesson")+"',"+new Integer(stringmap.get("id"))+")");
+            int done = stmt.executeUpdate(query);
+
+
+  	 sendMessage("added");
+        }
+        if(msg.equals("delete_button"))
+        {
+            sendMessage("what_deleted");
+            msg = receiveMessage();
+            query = ("DELETE FROM lessons WHERE id='"+msg+"'");
+            int done = stmt.executeUpdate(query);
+            sendMessage("deleted");
+        }
+        if(msg.equals("edit_button"))
+        {
+            sendMessage("edit_button");
+        }
+        if(msg.equals("edit"))
+        {
+            sendMessage("button_ok");
+            stringmap = receiveStringMap();
+            query = ("UPDATE lessons SET lessons_name="+ quotate(stringmap.get("lesson")) + "WHERE id=" + stringmap.get("lessons_id"));
+            int done = stmt.executeUpdate(query);
+            query = "UPDATE lessons SET id_teacher="+ quotate(stringmap.get("id")) + "WHERE id=" + stringmap.get("lessons_id");
+            done = stmt.executeUpdate(query);
+            sendMessage("editted");
+        }
+        if(msg.equals("exit_lessontable"))
+        {
+            sendMessage("exit_lessontable");
+            break;
+        }
+        
+    }while(true);
+}
+    
+public void TeachersWindow(String msg) throws SQLException
+{
+    String query = new String();
+    sendMessage("openTeachersWindow");
+    do
+    {
+
+
+msg = receiveMessage();
+
+        if(msg.equals("TeachersWindowOpen"))
+        {
+            sendMessage("Teachers");
+        }
+        if(msg.equals("add_button"))
+        {
+            sendMessage("addTeachers_button");
+            continue;
+        }
+        if(msg.equals("teacher_list"))
+        {
+            query = ("SELECT * FROM teachers");
+            rs = stmt.executeQuery(query);
+            ResultSets=new ArrayList<>();
+            while(rs.next())
+            {
+                String[] row={rs.getString("id"),rs.getString("teacher_surname"),rs.getString("teacher_name"),rs.getString("teacher_middlename")};
+                ResultSets.add(row);
+            }
+            sendObject(ResultSets);//отправка инфы бд
+            continue;
+        }
+        if(msg.equals("button_ok"))
+        {
+            sendMessage("button_ok");
+            stringmap = receiveStringMap();
+            rs = stmt.executeQuery("SELECT MAX(id) AS max_id FROM teachers");
+            int id=0;
+            if (rs.next()) {
+                id = rs.getInt("max_id");  
+            }
+            query = ("INSERT INTO teachers VALUES("+(id+1)+",'"+stringmap.get("name")+"','"+stringmap.get("mid")+"','"+stringmap.get("surname")+"')");
+            int done = stmt.executeUpdate(query);
+            sendMessage("added");
+        }
+
+
+if(msg.equals("delete_button"))
+        {
+            sendMessage("what_deleted");
+            msg = receiveMessage();
+            query = ("DELETE FROM teachers WHERE id='"+msg+"'");
+            int done = stmt.executeUpdate(query);
+            sendMessage("deleted");
+        }
+        if(msg.equals("exit_teachertable"))
+        {
+            sendMessage("exit_teachertable");
+            break;
+        }
+       
+        
+    }while(true);
+}
+
+public void sendLessons() throws SQLException
+{
+    ResultSets = new ArrayList<>();
+    query = ("SELECT * FROM lessons");
+    rs = stmt.executeQuery(query);
+    ResultSets=new ArrayList<>();
+                
+    while(rs.next())
+    {
+        String[] row  = {rs.getString("id"),rs.getString("lessons_name"),rs.getString("id_teacher")};
+        ResultSets.add(row);
+    }
+    sendObject(ResultSets);
+}
+public void sendTeachers() throws SQLException
+{
+    ResultSets = new ArrayList<>();
+    query = ("SELECT * FROM teachers");
+    rs = stmt.executeQuery(query);
+    ResultSets=new ArrayList<>();
+               
+    while(rs.next())
+
+
+    {
+        String[] row  = {rs.getString("id"),rs.getString("teacher_name"),
+        rs.getString("teacher_middlename"),rs.getString("teacher_surname")};
+        ResultSets.add(row);
+    }
+    sendObject(ResultSets);
+}
+
+
+}
+
+
+
+
+
+DbConnection.java
+
+public class DbConnection 
+{
+private Connection myConnection;
+
+private static String connectionString = "jdbc:mysql://localhost/timetable";
+private static String username = "root";
+private static String password = "";
+    
+    
+
+public DbConnection(){}
+
+public void init() throws ClassNotFoundException
+{
+    try {
+        Class.forName("com.mysql.jdbc.Driver");
+        myConnection=DriverManager.getConnection("jdbc:mysql://localhost/timetable", "root", "");
+    } catch (SQLException ex) {
+        Logger.getLogger(DbConnection.class.getName()).log(Level.SEVERE, null, ex);
+    }
+
+
+
+}
+public Connection getMyConnection()
+{
+    return myConnection;
+}
+public void close(ResultSet rs)
+{
+    if(rs !=null)
+    {
+        try
+        {
+            rs.close();
+        }
+        catch(Exception e){}
+    }
+}
+public void close(java.sql.Statement stmt)
+{
+    if(stmt !=null)
+    {
+        try
+        {
+            stmt.close();
+        }
+        catch(Exception e){}
+    }
+} 
+
+public void destroy()
+{
+    if(myConnection !=null)
+    {
+        try
+        {
+            myConnection.close();
+        }
+        catch(Exception e){}
+    }
+} 
+}
