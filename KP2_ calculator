@@ -1,0 +1,98 @@
+import javax.swing.*;//импорт пакета библиотеки для графического интерфейса
+import java.awt.*;
+import java.awt.event.*;//импорт пакета библиотеки, содержащей методы обработки событий
+
+public class Calculator
+{
+    public static void main(String args[])
+    {
+        MyForm obj=new MyForm();
+    }
+}
+
+class MyForm extends JFrame implements ItemListener
+{
+    JLabel l1,l2,l3;//для текстовых строк
+    JTextField t1,t2,t3;//для однострочных текстовых редакторов
+    CheckboxGroup group = new CheckboxGroup();//создание группы кнопок с зависи-мой фиксацией
+    Checkbox b1,b2,b3,b4,b5;
+
+
+    public MyForm()
+    {
+        setLayout(new FlowLayout());
+
+        l1=new JLabel("First Number:");
+        t1=new JTextField();
+        t1.setColumns(20);
+
+        l2=new JLabel("Second Number:");
+        t2=new JTextField();
+        t2.setColumns(20);
+
+        b1=new Checkbox("Add",group,true);//сложение
+        b2=new Checkbox("Sub",group,false);//вычитание
+        b3=new Checkbox("Mul",group,false);//умножение
+        b4=new Checkbox("Div",group,false);//деление
+        b5=new Checkbox("Clear",group,false);//очистка окон
+
+        l3=new JLabel("Result");
+        t3=new JTextField();
+        t3.setColumns(20);
+
+        add(l1);
+        add(t1);
+        add(l2);
+        add(t2);
+        add(b1);
+        add(b2);
+        add(b3);
+        add(b4);
+        add(b5);
+        add(l3);
+        add(t3);
+
+        b1.addItemListener(this);//добаление слушателя к компоненту 
+        b2.addItemListener(this);
+        b3.addItemListener(this);
+        b4.addItemListener(this);
+        b5.addItemListener(this);
+
+        setVisible(true);
+        setSize(250,400);
+
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public void itemStateChanged(ItemEvent ae)//метод, который вызывается при изменении состояний Checkbox
+    {
+        Double num1=Double.parseDouble(t1.getText());
+        Double num2=Double.parseDouble(t2.getText());
+
+
+        if(ae.getSource()==b1)
+        {
+            t3.setText(String.valueOf(num1+num2));
+        }
+        if(ae.getSource()==b2)
+        {
+            t3.setText(String.valueOf(num1-num2));
+        }
+        if(ae.getSource()==b3)
+        {
+            t3.setText(String.valueOf(num1*num2));
+        }
+        if(ae.getSource()==b4)
+        {
+            t3.setText(String.valueOf(num1/num2));
+        }
+        if(ae.getSource()==b5)
+        {
+            t1.setText("");
+            t2.setText("");
+            t3.setText("");
+        }
+    }
+
+}
+
