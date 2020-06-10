@@ -1,0 +1,444 @@
+package sample;
+
+public class Configs {
+    protected String dbHost = "localhost";
+    protected String dbPort = "3306";
+    protected String dbUser = "root";
+    protected String dbPassword = "12345";
+    protected String dbName = "periodicals";
+}
+package sample;
+
+public class Const {
+
+    public static final String BASE_TABLE = "base";
+
+    public static final String BASE_ID = "idbase";
+    public static final String BASE_NAZVANIE = "nazvanie";
+    public static final String BASE_OPISANIE = "opisanie";
+    public static final String BASE_VARIANT = "variant";
+    public static final String BASE_CHITATEL = "chitatel";
+    public static final String BASE_ADRES = "adres";
+    public static final String BASE_DATAS = "datas";
+    public static final String BASE_DATADO = "datado";
+    public static final String BASE_CENA = "cena";
+}
+package sample;
+
+public class Base {
+
+    //String base_id;
+    String base_nazvanie;
+    String base_opisanie;
+    String base_variant;
+    String base_chitatel;
+    String base_adres;
+    String base_datas;
+    String base_datado;
+    double cena;
+
+    public Base() {
+    }
+
+    public Base(String base_nazvanie, String base_opisanie, String base_variant, String base_chitatel,String base_adres, String base_datas, String base_datado, double cena) {
+        //this.base_id = base_id;
+        this.base_nazvanie = base_nazvanie;
+        this.base_opisanie = base_opisanie;
+        this.base_variant = base_variant;
+        this.base_chitatel = base_chitatel;
+        this.base_adres = base_adres;
+        this. base_datas =  base_datas;
+        this.base_datado = base_datado;
+        this.cena = cena;
+    }
+    //public String getc() { return base_id; }
+    //public void setbase_id(String base_id) { this.base_id = base_id; }
+
+    public String getBase_nazvanie() {
+        return base_nazvanie;
+    }
+
+    public void setBase_nazvanie(String base_nazvanie) {
+        this.base_nazvanie = base_nazvanie;
+    }
+
+    public String getBase_opisanie() {
+        return base_opisanie;
+    }
+
+    public void setBase_opisanie(String base_opisanie) {
+        this.base_opisanie = base_opisanie;
+    }
+
+    public String getBase_variant() {
+        return base_variant;
+    }
+
+    public void setBase_variant(String base_variant) {
+        this.base_variant = base_variant;
+    }
+    public String getBase_chitatel() {
+        return base_chitatel;
+    }
+
+    public void setBase_chitatel(String base_chitatel) {
+        this.base_chitatel = base_chitatel;
+    }
+    public String getBase_adres() {
+        return base_adres;
+    }
+
+    public void setBase_adres(String cena) {
+        this.base_adres = base_adres;
+    }
+    public String getBase_datas() {
+        return  base_datas;
+    }
+
+    public void setBase_datas(String base_datas) {
+        this. base_datas =  base_datas;
+    }
+
+    public String getBase_datado() {
+        return base_datado;
+    }
+
+    public void setBase_datado(String  base_datado) {
+        this. base_datado =  base_datado;
+    }
+    public double getBase_cena() {
+        return cena;
+    }
+
+    public void setBase_cena(double gazORzhur) {
+        this.cena = cena;
+    }
+
+}
+package sample;
+
+import java.net.URL;
+import java.util.ResourceBundle;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+
+
+public class Controller {
+
+    @FXML
+    private ResourceBundle resources;
+
+    @FXML
+    private URL location;
+
+    @FXML
+    private Button dobavit;
+
+    @FXML
+    private CheckBox gazeta_d;
+
+    @FXML
+    private CheckBox zhurnal_d;
+
+    @FXML
+    private TextField nazvanie_d;
+
+    @FXML
+    private TextField chitatel_d;
+
+    @FXML
+    private TextArea opisanie_d;
+
+    @FXML
+    private TextField adres_d;
+
+    @FXML
+    private TextField datas_d;
+
+    @FXML
+    private TextField datado_d;
+
+    @FXML
+    private TextField cena_d;
+
+    @FXML
+    private Button redaktirovat;
+
+    @FXML
+    private TextField nazvanie_r;
+
+    @FXML
+    private TextField chitatel_r;
+
+    @FXML
+    private TextField adres_r;
+
+    @FXML
+    private TextField datas_r;
+
+    @FXML
+    private TextField datado_r;
+
+    @FXML
+    private TextField cena_r;
+
+    @FXML
+    private Button zapisvfile;
+
+    @FXML
+    private TextField adres_f;
+
+    @FXML
+    private Button udalit;
+
+    @FXML
+    private TextField adres_y;
+
+    @FXML
+    private TextField nazvanie_y;
+
+    @FXML
+    void initialize() {
+       dobavit.setOnAction(event -> {
+           Add();
+       });
+        redaktirovat.setOnAction(event -> {
+            Update();
+        });
+        udalit.setOnAction(event->{
+            Delete();
+        });
+        zapisvfile.setOnAction(event ->{
+            Record();
+        });
+
+    }
+
+    private void Add(){
+        DBH dbhandler = new DBH();
+        String nazvanie = nazvanie_d.getText();
+        String opisanie = opisanie_d.getText();
+        String variant = "";
+        if (gazeta_d.isSelected())
+            variant = "gazeta";
+        else
+            variant = "zhurnal";
+        String chitatel = chitatel_d.getText();
+        String adres = adres_d.getText();
+        String datas = datas_d.getText();
+        String datado = datado_d.getText();
+        String cena = cena_d.getText();
+
+        Base base = new Base(nazvanie, opisanie, variant, chitatel, adres, datas, datado, Double.parseDouble(cena));
+
+        dbhandler.addBase(base);
+    }
+
+    private void Update(){
+        DBH dbhandler = new DBH();
+        String nazvanie = nazvanie_r.getText();
+        String chitatel = chitatel_r.getText();
+        String adres = adres_r.getText();
+        String datas = datas_r.getText();
+        String datado = datado_r.getText();
+        String cena = cena_r.getText();
+
+        Base base = new Base(nazvanie, null, null, chitatel, adres, datas, data-do, Double.parseDouble(cena));
+
+        dbhandler.modifyBase(base);
+    }
+
+    private void Delete(){
+        DBH dbhandler = new DBH();
+        String nazvanie = nazvanie_y.getText();
+        String adres = adres_y.getText();
+
+        Base base = new Base(nazvanie, null, null, null, adres, null, null, 0);
+
+        dbhandler.deleteBase(base);
+
+    }
+
+    private void Record(){
+        DBH dbhandler = new DBH();
+        String adres = adres_f.getText();
+
+        Base base = new Base(null, null, null, null, adres, null, null, 0);
+
+        dbhandler.zapisBase(base);
+
+    }
+}
+package sample;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.*;
+
+
+public class DBH extends Configs {
+
+    Connection dbConnection;
+
+    public Connection getDbConnection() throws ClassNotFoundException, SQLExcep-tion{
+        String connectionStr="jdbc:mysql://"+dbHost+":"+dbPort+"/"+dbName+
+                "?verifyServerCertificate=false"+
+                "&useSSL=false"+
+                "&requireSSL=false"+
+                "&useLegacyDatetimeCode=false"+
+                "&amp"+
+                "&serverTimezone=UTC";
+        Class.forName("com.mysql.jdbc.Driver");
+        dbConnection = DriverManager.getConnection(connectionStr, dbUser, dbPassword);
+        return dbConnection;
+    }
+
+    public void addBase(Base base){
+        String insert = "INSERT INTO "+Const.BASE_TABLE+"("+Const.BASE_NAZVANIE+","+Const.BASE_OPISANIE+","+Const.BASE_VARIANT+","+
+                Const.BASE_CHITATEL+","+Const.BASE_ADRES+","+Const.BASE_DATAS+","+Const.BASE_DATADO+","+Const.BASE_CENA+")"+"VALUES(?,?,?,?,?,?,?,?)";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(insert);
+            prSt.setString(1,base.getBase_nazvanie());
+            prSt.setString(2,base.getBase_opisanie());
+            prSt.setString(3,base.getBase_variant());
+            prSt.setString(4,base.getBase_chitatel());
+            prSt.setString(5,base.getBase_adres());
+            prSt.setString(6,base.getBase_datas());
+            prSt.setString(7,base.getBase_datado());
+            prSt.setDouble(8,base.getBase_cena());
+            prSt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        finally
+        {
+            DBH.close(dbConnection);
+        }
+    }
+    public void modifyBase(Base base){
+        String modify = "UPDATE "+Const.BASE_TABLE+" SET "+Const.BASE_CHITATEL+" = ?, "+Const.BASE_DATAS+" = ?, "+Const.BASE_DATADO+" = ? ,"+Const.BASE_CENA+" = ?"+" WHERE "+Const.BASE_NAZVANIE+" = ? AND "+Const.BASE_ADRES+" = ?";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(modify);
+            prSt.setString(1,base.getBase_chitatel());
+            prSt.setString(2,base.getBase_datas());
+            prSt.setString(3,base.getBase_datado());
+            prSt.setDouble(4,base.getBase_cena());
+            prSt.setString(5,base.getBase_nazvanie());
+            prSt.setString(6,base.getBase_adres());
+            prSt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        finally
+        {
+            DBH.close(dbConnection);
+        }
+    }
+    public void deleteBase(Base base){
+        String delete = "DELETE FROM "+Const.BASE_TABLE+" WHERE "+Const.BASE_NAZVANIE+" = ? AND "+Const.BASE_ADRES+" = ?";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(delete);
+            prSt.setString(1,base.getBase_nazvanie());
+            prSt.setString(2,base.getBase_adres());
+            prSt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        finally
+        {
+            DBH.close(dbConnection);
+        }
+    }
+
+    public void zapisBase(Base base){
+        String chttl = "";
+        String nzvn = "";
+        String dts = "";
+        String dtd = "";
+        double cna = 0;
+        String select = "SELECT * FROM " + Const.BASE_TABLE + " WHERE " + Const.BASE_ADRES + "=? ";
+        try {
+            PreparedStatement prSt = getDbConnection().prepareStatement(select);
+            prSt.setString(1,base.getBase_adres() );
+            ResultSet Reset = prSt.executeQuery();
+            while (Reset.next()) {
+                chttl = Reset.getString("chitatel");
+                nzvn = Reset.getString("nazvanie");
+                dts = Reset.getString("datas");
+                dtd = Reset.getString("datado");
+                cna = Reset.getDouble("cena");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        try (FileWriter writer = new FileWriter("Выписка.txt", false)) {
+            String text;
+            text = "-------------------------------------Бгуир-------------------------------------\r\n";
+            writer.write(text);
+            text = "--------------------------Created by Nesterova Ekaterina----------------------------\r\n";
+            writer.write(text);
+            text = "Читатель : " + chttl + "\r\n" + "Адрес и индекс : " + base.getBase_adres() + "\r\n"+ "Подписка на издание: " + nzvn + "\r\n" +
+                    "с : " + dts+ "\r\n" + "до : " +  dtd+ "\r\n" +  "Стоимость подписки : " + cna +"\r\n";
+            writer.write(text);
+            text = "-------------------------------------------------------------------------------";
+            writer.write(text);
+
+            writer.flush();
+        } catch (IOException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
+
+    public static void close(Connection con)
+    {
+        if (con != null)
+        {
+            try
+            {
+                con.close();
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    public Connection getCon(){
+        return dbConnection;
+    }
+}
+package sample;
+
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+public class Main extends Application {
+
+    @Override
+    public void start(Stage primaryStage) throws Exception{
+        Parent root = FXMLLoader.load(getClass().getResource("sample.fxml"));
+        primaryStage.setTitle("kr_2_2");
+        primaryStage.setScene(new Scene(root, 700, 500));
+        primaryStage.show();
+    }
+
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
+
