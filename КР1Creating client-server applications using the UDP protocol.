@@ -1,0 +1,132 @@
+//server
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+
+public class Server {
+    public static final int DEFAULT_PORT = 8001;
+
+    public Server() {
+    }
+
+    public void runServer() throws IOException {
+        DatagramSocket s = null;
+
+        try {
+            boolean stopFlag = false;
+            byte[] buf = new byte[512];
+            s = new DatagramSocket(8001);
+            System.out.println("UDPServer: Started on " + s.getLocalAddress() + ":" + s.getLocalPort());
+
+            while(!stopFlag) {
+                DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
+                s.receive(recvPacket);
+                String cmd = new String(recvPacket.getData());
+                cmd = cmd.substring(0, cmd.indexOf(10));
+                System.out.println("x: " + cmd);
+                int x = Integer.parseInt(cmd);
+                s.receive(recvPacket);
+                cmd = new String(recvPacket.getData());
+                cmd = cmd.substring(0, cmd.indexOf(10));
+                System.out.println("y: " + cmd);
+                int y = Integer.parseInt(cmd);
+                s.receive(recvPacket);
+                cmd = new String(recvPacket.getData());
+                cmd = cmd.substring(0, cmd.indexOf(10));
+                System.out.println("z: " + cmd);
+                int z = Integer.parseInt(cmd);
+                double result = (double)z * Math.cos((double)x - 0.5235987755982988D) / (Math.pow(2.718281828459045D, 0.5D) + Math.pow(Math.sin((double)y), 2.0D)) * (1.0D + Math.pow((double)z, 2.0D) / (3.0D - Math.pow((double)z, 5.0D) / 5.0D));
+                saveInFile(x, y, z, result);
+                String str = String.valueOf(result);
+                byte[] bytes = str.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(bytes, bytes.length, recvPacket.getAddress(), recvPacket.getPort());
+                s.send(sendPacket);
+                stopFlag = true;
+            }
+
+            System.out.println("UDPServer: Stopped");
+        } finally {
+            if (s != null) {
+                s.close();
+            }
+
+        }
+    }
+
+    private static void saveInFile(int x, int y, int z, double result) {
+        String string = "X: " + x + "; Y: " + y + "; Z: " + z + "; Result: " + result + ".";
+
+        try {
+            FileWriter fileWriter = new FileWriter("Results.txt", true);
+            fileWriter.write(string + "\r\n\r\n");
+            fileWriter.close();
+        } catch (IOException var8) {
+            var8.printStackTrace();
+        }
+
+    }
+
+    public static void main(String[] args) {
+        try {
+            (new Server()).runServer();
+        } catch (IOException var2) {
+            var2.printStackTrace();
+        }
+
+    }
+}
+
+//client
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.Scanner;
+
+public class Client {
+    public Client() {
+    }
+
+    public void runClient() throws IOException {
+        DatagramSocket s = null;
+
+        try {
+            byte[] buf = new byte[512];
+            s = new DatagramSocket();
+            System.out.println("UDPClient: Started");
+            new Scanner(System.in);
+            char[] array = new char[]{'x', 'y', 'z'};
+            char[] var4 = array;
+            int var5 = array.length;
+
+            for(int var6 = 0; var6 < var5; ++var6) {
+                char i = var4[var6];
+                System.out.print("Enter " + i + ": ");
+                int length = System.in.read(buf);
+                DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, InetAddress.getByName("127.0.0.1"), 8001);
+                s.send(sendPacket);
+            }
+
+            DatagramPacket recvPacket = new DatagramPacket(buf, buf.length);
+            s.receive(recvPacket);
+            System.out.println("The answer is " + new String(recvPacket.getData()));
+            System.out.println("UDPClient: Ended");
+        } finally {
+            if (s != null) {
+                s.close();
+            }
+
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            Client client = new Client();
+            client.runClient();
+        } catch (IOException var2) {
+            var2.printStackTrace();
+        }
+
+    }
+}
